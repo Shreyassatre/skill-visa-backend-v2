@@ -1,0 +1,13 @@
+fastapi[standard]
+google-genai
+PyPDF2
+python-dotenv
+mammoth
+pymongo
+numpy
+python-jose
+python-multipart
+authlib
+starlette
+itsdangerous
+pydantic
