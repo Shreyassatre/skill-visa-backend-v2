@@ -3,3 +3,6 @@ __pycache__
 main2.py
 models.py
 backupmain.py
+Dockerfile
+vercel.json
+.dockerignore
