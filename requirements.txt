@@ -5,9 +5,11 @@ python-dotenv
 mammoth
 pymongo
 numpy
-python-jose
 python-multipart
 authlib
 starlette
 itsdangerous
 pydantic
+fastapi
+python-jose[cryptography]
+uvicorn
