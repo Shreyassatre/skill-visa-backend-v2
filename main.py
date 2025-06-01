@@ -2309,7 +2309,8 @@ async def get_raw_webhook_response_and_upsert( # Renamed for clarity
             detail="You don't have permission to access this data"
         )
 
-    N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
+    # N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
+    N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
     logger.info(f"Request for points calculation for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- Get MongoDB collections ---
@@ -2381,7 +2382,7 @@ async def get_raw_webhook_response_and_upsert( # Renamed for clarity
 
     found_visa_rules_dict: Optional[Dict[str, Any]] = None
     try:
-        visa_rules_query: Dict[str, Any] = {"visa_subclass": visa_subclass}
+        visa_rules_query: Dict[str, Any] = {"visa_subclass": "189"}
         if state: visa_rules_query["state"] = state
         visa_rule_doc_raw = visa_collection.find_one(visa_rules_query)
         if not visa_rule_doc_raw:
