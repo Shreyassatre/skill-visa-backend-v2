@@ -294,6 +294,56 @@ class OccupationSuggestionResponse(BaseModel):
     candidate_email: EmailStr
     suggestions: OccupationSuggestionStorage
 
+    @classmethod
+    def from_storage(cls, storage: OccupationSuggestionStorage):
+        # Deduplicate matched_details based on anzsco_code
+        seen_codes = set()
+        unique_matched_details = []
+        for detail in storage.matched_details:
+            if detail.anzsco_code not in seen_codes:
+                seen_codes.add(detail.anzsco_code)
+                unique_matched_details.append(detail)
+
+        # Create a new OccupationSuggestionStorage with unique matched_details
+        unique_suggestions = OccupationSuggestionStorage(
+            uploader_email=storage.uploader_email,
+            candidate_email=storage.candidate_email,
+            suggested_by_llm=storage.suggested_by_llm,  # Keep LLM suggestions as is
+            matched_details=unique_matched_details,
+            last_updated=storage.last_updated
+        )
+
+        return cls(
+            uploader_email=storage.uploader_email,
+            candidate_email=storage.candidate_email,
+            suggestions=unique_suggestions
+        )
+
+    @classmethod
+    def from_storage(cls, storage: OccupationSuggestionStorage):
+        # Deduplicate matched_details based on anzsco_code
+        seen_codes = set()
+        unique_matched_details = []
+        for detail in storage.matched_details:
+            if detail.anzsco_code not in seen_codes:
+                seen_codes.add(detail.anzsco_code)
+                unique_matched_details.append(detail)
+
+        # Create a new OccupationSuggestionStorage with unique matched_details
+        unique_suggestions = OccupationSuggestionStorage(
+            uploader_email=storage.uploader_email,
+            candidate_email=storage.candidate_email,
+            suggested_by_llm=storage.suggested_by_llm,  # Keep LLM suggestions as is
+            matched_details=unique_matched_details,
+            last_updated=storage.last_updated
+        )
+
+        return cls(
+            uploader_email=storage.uploader_email,
+            candidate_email=storage.candidate_email,
+            suggestions=unique_suggestions
+        )
+
 # --- Models for PUT/Update ---
 # UpdateCandidateDataRequest now directly uses the full ParsedResumeDataBase structure for replacement
 class UpdateCandidateDataRequest(ParsedResumeDataBase):
@@ -1983,7 +2033,7 @@ class CalculatedPointsBodySchema(BaseModel): # This schema represents the entire
     detail_evaluation: List[DetailEvaluationItemSchema]
     total_score: int
 
-@app.post(
+@app.get(
     "/api/evaluate/{uploader_email}/{candidate_email}/visa/analysis", # Modified path for clarity
     response_model=Any, # FastAPI endpoint will now return the raw JSON from webhook (parsed to Python object)
     tags=["Visa Evaluation"],
@@ -2003,7 +2053,7 @@ async def get_raw_webhook_response(
     nominated_occupation: str = Query(..., description="The occupation nominated by the candidate."),
     visa_subclass: str = Query(..., description="The visa subclass the candidate is applying for."),
     state: Optional[str] = Query(None, description="The state for state-specific visa rules (e.g., 'Western Australia'). If provided, rules specific to this state and visa subclass will be fetched."),
-    points_data_from_request_body: Optional[CalculatedPointsBodySchema] = Body(None),
+    # points_data_from_request_body: Optional[CalculatedPointsBodySchema] = Body(None),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     # Verify if the current user has access to this data
@@ -2093,22 +2143,22 @@ async def get_raw_webhook_response(
     if found_user_info_object is None or found_visa_rules_dict is None:
         raise HTTPException(status_code=500, detail="Internal error: data fetching for webhook payload incomplete.")
 
-    if points_data_from_request_body is None:
-        webhook_payload = SkillVisaEvaluationResponseFlexible(
-            user_info=[found_user_info_object],
-            visa_rules=found_visa_rules_dict,
-            nominated_occupation=nominated_occupation,
-            visa_subclass=visa_subclass
-        )
-    else:
-        webhook_payload = SkillVisaEvaluationResponseFlexible(
-            user_info=[found_user_info_object],
-            visa_rules=found_visa_rules_dict,
-            nominated_occupation=nominated_occupation,
-            visa_subclass=visa_subclass,
-            calculated_points=points_data_from_request_body.model_dump()
-        )
-    logger.info(f"Webhook payload successfully prepared for candidate '{candidate_email}'.")
+    # if points_data_from_request_body is None:
+    webhook_payload = SkillVisaEvaluationResponseFlexible(
+        user_info=[found_user_info_object],
+        visa_rules=found_visa_rules_dict,
+        nominated_occupation=nominated_occupation,
+        visa_subclass=visa_subclass
+    )
+    # else:
+    #     webhook_payload = SkillVisaEvaluationResponseFlexible(
+    #         user_info=[found_user_info_object],
+    #         visa_rules=found_visa_rules_dict,
+    #         nominated_occupation=nominated_occupation,
+    #         visa_subclass=visa_subclass,
+    #         calculated_points=points_data_from_request_body.model_dump()
+    #     )
+    # logger.info(f"Webhook payload successfully prepared for candidate '{candidate_email}'.")
 
     # --- 2. Call the n8n Webhook and return its response as-is ---
     try:
