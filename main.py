@@ -1747,7 +1747,7 @@ async def get_raw_webhook_response( # Renamed function for clarity
         )
     
     # N8N_WEBHOOK_URL = "https://mwxeosxtdobcbzsxku.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f14"
-    N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
+    N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- 1. Prepare the payload for the webhook (same logic as before) ---
@@ -2065,8 +2065,8 @@ async def get_raw_webhook_response(
     
     # logger.info(f"Received request for /visa/analysis. Parsed calculated_points from body: {points_data_from_request_body.model_dump_json(indent=2)}")
     
-    # N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f16"
-    N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f16"
+    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f16"
+    N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f16"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     interactions_collection = db['additional_info']
@@ -2218,8 +2218,8 @@ async def get_raw_webhook_response(
 #             detail="You don't have permission to access this data"
 #         )
     
-#     # N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f17"
-#     N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
+#     # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f17"
+#     N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
 #     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
 #     interactions_collection = db['additional_info']
@@ -2359,8 +2359,10 @@ async def get_raw_webhook_response_and_upsert( # Renamed for clarity
             detail="You don't have permission to access this data"
         )
 
-    # N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
-    N8N_WEBHOOK_URL = "https://axtfamspabmkizbimx.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f19"
+    N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f19"
     logger.info(f"Request for points calculation for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- Get MongoDB collections ---
