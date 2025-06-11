@@ -24,8 +24,8 @@ oauth = OAuth(config) # If config object is empty, this is okay.
 # --- Environment Variables for OAuth and Frontend ---
 GOOGLE_CLIENT_ID = "33766377350-ebnusnahk1gh5b6ji5l2vansma2h11jb.apps.googleusercontent.com"  # Replace with your Google client ID
 GOOGLE_CLIENT_SECRET = "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"  # Replace with your Google client secret
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000") # Your Next.js frontend URL
-# FRONTEND_URL = os.getenv("FRONTEND_URL", "https://skill-visa-three.vercel.app") # Your Next.js frontend URL
+# FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000") # Your Next.js frontend URL
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://skill-visa-three.vercel.app") # Your Next.js frontend URL
 
 # The REDIRECT_URI that Google calls back to *your backend*.
 # This MUST be registered in Google Cloud Console as an "Authorized redirect URI".
