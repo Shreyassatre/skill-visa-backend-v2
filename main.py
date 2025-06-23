@@ -396,16 +396,37 @@ def parse_resume_with_gemini(text: str) -> tuple[Optional[Dict[str, Any]], Optio
         return None, None
 
     prompt = f"""
-    Analyze the following resume text. Your goal is to:
-    1. Extract detailed information into a structured JSON format.
-    2. Suggest 4-5 relevant broad-level occupation titles based on the content.
+    Analyze the following resume text and perform the following tasks:
 
-    **Output Requirements:**
-    - Respond with a **single, strictly valid JSON object**.
-    - This JSON object must have exactly two top-level keys: "structured_data" and "suggested_occupations".
-    - Do NOT include any text before `{{` or after `}}`. No markdown.
-    - Under "structured_data", follow the schema defined below precisely. Use `""` or `[]` for missing fields as appropriate. **Accurately extract the candidate's primary email into the "email" field.**
-    - Under "suggested_occupations", provide a JSON list of 4-5 plausible, broad occupation title strings (e.g., "Software Engineer", "Marketing Specialist", "Accountant", "Project Manager", "Registered Nurse").
+    ---
+
+    #### 🎯 Your Goals:
+    1. **Extract detailed information into a strictly structured JSON object** based on the schema provided.
+    2. **Suggest 4–5 relevant occupation titles aligned with the Australian ANZSCO classification**, giving **higher weight to roles where the candidate has:**
+    - **Longer durations of professional experience**
+    - **Higher or more relevant educational qualifications**
+    - **Work closely related to ANZSCO-recognized job roles**
+
+    ---
+
+    #### 📤 Output Requirements:
+    - Return a **single, strictly valid JSON object** with **only** the following two top-level keys:
+    - `"structured_data"`: Follows the schema below. Use `""` or `[]` if data is missing.
+    - `"suggested_occupations"`: A list of 4–5 **broad occupation titles** (e.g., `"Software Engineer"`, `"Marketing Specialist"`, `"Registered Nurse"`) that are **plausibly mapped to ANZSCO roles**.
+    - **Do not include any text, markdown, or comments before or after the JSON output.**
+    - Ensure the `"email"` field captures the candidate’s **primary email address**, and all date fields are in `"YYYY-MM-DD"` format where available.
+
+    ---
+
+    #### 🧠 Occupation Suggestion Criteria:
+    - Focus on ANZSCO-aligned broad titles.
+    - Prefer occupations:
+    - Where experience spans multiple years.
+    - Where education aligns with occupational domains.
+    - Where Australia-based experience exists (if applicable).
+    - Avoid overly niche job titles; keep them general and relevant to ANZSCO.
+
+    ---
 
     **Target JSON Schema for "structured_data":**
         {{
@@ -530,8 +551,10 @@ def parse_resume_with_gemini(text: str) -> tuple[Optional[Dict[str, Any]], Optio
             // ... other structured fields ...
         }},
         "suggested_occupations": [
-            "Software Developer",
-            "Data Analyst"
+            "Occupation Title 1",
+            "Occupation Title 2",
+            "Occupation Title 3",
+            "Occupation Title 4"
         ]
         }}
 
