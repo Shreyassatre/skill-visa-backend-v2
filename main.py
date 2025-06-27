@@ -1770,9 +1770,9 @@ async def get_raw_webhook_response( # Renamed function for clarity
         )
     
     # N8N_WEBHOOK_URL = "https://mwxeosxtdobcbzsxku.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f14"
-    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
-    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f21"
-    N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f21"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f21"
+    N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f21"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- 1. Prepare the payload for the webhook (same logic as before) ---
@@ -2059,6 +2059,162 @@ class CalculatedPointsBodySchema(BaseModel): # This schema represents the entire
     total_score: int
 
 @app.get(
+    "/api/evaluate/{uploader_email}/{candidate_email}/visa/all-state-eligibility", # Modified path for clarity
+    response_model=Any, # FastAPI endpoint will now return the raw JSON from webhook (parsed to Python object)
+    tags=["Visa Evaluation"],
+    summary="Triggers an n8n webhook and returns its raw JSON response",
+    description="Combines candidate data with visa rules, sends it to an n8n webhook, and returns the entire JSON response received from the webhook as-is.",
+    responses={
+        200: {"description": "Successfully retrieved raw response from the webhook"},
+        404: {"description": "Candidate, Uploader, or Visa Rule (for internal payload) not found"},
+        500: {"description": "Internal server error"},
+        502: {"description": "Bad Gateway - Error communicating with or non-JSON response from webhook service"},
+        503: {"description": "Database service unavailable"}
+    }
+)
+async def get_state_eligibility(
+    uploader_email: str = Path(..., description="Email of the uploader."),
+    candidate_email: str = Path(..., description="Email of the candidate."),
+    nominated_occupation: str = Query(..., description="The occupation nominated by the candidate."),
+    visa_subclass: str = Query(..., description="The visa subclass the candidate is applying for."),
+    state: Optional[str] = Query('ALL', description="The state for state-specific visa rules (e.g., 'Western Australia'). If provided, rules specific to this state and visa subclass will be fetched."),
+    # points_data_from_request_body: Optional[CalculatedPointsBodySchema] = Body(None),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    # Verify if the current user has access to this data
+    if not verify_access(current_user, uploader_email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to access this data"
+        )
+    
+    # logger.info(f"Received request for /visa/analysis. Parsed calculated_points from body: {points_data_from_request_body.model_dump_json(indent=2)}")
+    
+    N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f31"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f31"
+    logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
+
+    interactions_collection = db['additional_info']
+
+    # --- 1. Prepare the payload for the webhook (same logic as before) ---
+    if resume_collection is None:
+        logger.error("resume_collection is not initialized.")
+        raise HTTPException(status_code=503, detail="Database service (resume_collection) unavailable.")
+    if visa_collection is None:
+        logger.error("visa_collection is not initialized.")
+        raise HTTPException(status_code=503, detail="Database service (visa_collection) unavailable.")
+
+    uploader_email_lower = uploader_email.lower()
+    candidate_email_lower = candidate_email.lower()
+
+    found_user_info_object: Optional[UserInfoFlexible] = None
+    try:
+        uploader_doc = resume_collection.find_one(
+            {"_id": uploader_email_lower, "candidates.candidate_email": candidate_email_lower},
+            {"candidates.$": 1}
+        )
+        try:
+            qa_doc = interactions_collection.find_one(
+                {"uploader_email": uploader_email_lower, "candidate_email": candidate_email_lower},
+                {"additional_info.$": 1}
+            )
+        except:
+            print('no quetions asked')
+        if not uploader_doc or 'candidates' not in uploader_doc or not uploader_doc['candidates']:
+            raise HTTPException(status_code=404, detail="Candidate resume data not found.")
+        candidate_entry = uploader_doc['candidates'][0]
+        raw_candidate_data = candidate_entry
+        if qa_doc:
+            candidate_answers = qa_doc['additional_info']
+            raw_candidate_answers = candidate_answers
+        else:
+            raw_candidate_answers = {}
+        # raw_additional_info = candidate_entry.get('additional_info')
+        if not raw_candidate_data or not isinstance(raw_candidate_data, dict):
+            raise HTTPException(status_code=404, detail="Candidate's parsed resume data is missing or not in expected dict format.")
+        found_user_info_object = UserInfoFlexible(
+            uploader_email=uploader_email, candidate_email=candidate_email, candidate_data=raw_candidate_data, questions_candidate_answered=raw_candidate_answers
+        )
+    except OperationFailure as op_err:
+        logger.error(f"DB error fetching candidate data: {op_err.details}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"DB error fetching candidate data: {op_err.code_name}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching candidate data: {e}")
+        raise HTTPException(status_code=500, detail="Internal error fetching candidate data.")
+
+    found_visa_rules_dict: Optional[Dict[str, Any]] = None
+    try:
+        visa_rules_query: Dict[str, Any] = {"visa_subclass": visa_subclass}
+        if state: visa_rules_query["state"] = state
+        visa_rule_doc_raw = visa_collection.find_one(visa_rules_query)
+        if not visa_rule_doc_raw:
+            detail_msg = f"Visa rules not found for subclass '{visa_subclass}'"
+            if state: detail_msg += f" and state '{state}'"
+            raise HTTPException(status_code=404, detail=detail_msg + ".")
+        if "_id" in visa_rule_doc_raw and not isinstance(visa_rule_doc_raw["_id"], str):
+            visa_rule_doc_raw["_id"] = str(visa_rule_doc_raw["_id"])
+        found_visa_rules_dict = visa_rule_doc_raw
+    except OperationFailure as op_err:
+        logger.error(f"DB error fetching visa rules: {op_err.details}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"DB error fetching visa rules: {op_err.code_name}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching visa rules: {e}")
+        raise HTTPException(status_code=500, detail="Internal error fetching visa rules.")
+
+    if found_user_info_object is None or found_visa_rules_dict is None:
+        raise HTTPException(status_code=500, detail="Internal error: data fetching for webhook payload incomplete.")
+
+    # if points_data_from_request_body is None:
+    webhook_payload = SkillVisaEvaluationResponseFlexible(
+        user_info=[found_user_info_object],
+        visa_rules=found_visa_rules_dict,
+        nominated_occupation=nominated_occupation,
+        visa_subclass=visa_subclass
+    )
+    # else:
+    #     webhook_payload = SkillVisaEvaluationResponseFlexible(
+    #         user_info=[found_user_info_object],
+    #         visa_rules=found_visa_rules_dict,
+    #         nominated_occupation=nominated_occupation,
+    #         visa_subclass=visa_subclass,
+    #         calculated_points=points_data_from_request_body.model_dump()
+    #     )
+    # logger.info(f"Webhook payload successfully prepared for candidate '{candidate_email}'.")
+
+    # --- 2. Call the n8n Webhook and return its response as-is ---
+    try:
+        logger.info(f"Sending data to n8n webhook: {N8N_WEBHOOK_URL}")
+        n8n_response = requests.post(
+            N8N_WEBHOOK_URL,
+            json=webhook_payload.model_dump(exclude_none=True), # Send the dict representation
+            timeout=50
+        )
+        n8n_response.raise_for_status()
+        
+        raw_webhook_data = n8n_response.json()
+        
+        logger.info(f"Successfully received and parsed response from n8n webhook. Status: {n8n_response.status_code}.")
+        return raw_webhook_data
+
+    except requests.exceptions.JSONDecodeError as e:
+        logger.error(f"Failed to decode JSON response from webhook: {e}. Response text: {n8n_response.text if 'webhook_response' in locals() else 'N/A'}")
+        raise HTTPException(status_code=502, detail="Webhook service returned non-JSON response.")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error calling n8n webhook: {e}")
+        if e.response is not None:
+            logger.error(f"Webhook response status: {e.response.status_code}, Text: {e.response.text}")
+            if 400 <= e.response.status_code < 600:
+                 raise HTTPException(status_code=502, detail=f"Webhook service error: {e.response.status_code} - {e.response.reason}")
+        raise HTTPException(status_code=502, detail="Failed to communicate with webhook service.")
+    except Exception as e_general: # Catch any other unexpected errors
+        logger.exception(f"An unexpected error occurred during or after webhook call: {e_general}")
+        raise HTTPException(status_code=500, detail="Internal server error processing webhook interaction.")
+
+@app.get(
     "/api/evaluate/{uploader_email}/{candidate_email}/visa/analysis", # Modified path for clarity
     response_model=Any, # FastAPI endpoint will now return the raw JSON from webhook (parsed to Python object)
     tags=["Visa Evaluation"],
@@ -2090,8 +2246,8 @@ async def get_raw_webhook_response(
     
     # logger.info(f"Received request for /visa/analysis. Parsed calculated_points from body: {points_data_from_request_body.model_dump_json(indent=2)}")
     
-    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f16"
-    N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f16"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f16"
+    N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f16"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     interactions_collection = db['additional_info']
@@ -2243,8 +2399,8 @@ async def get_raw_webhook_response(
 #             detail="You don't have permission to access this data"
 #         )
     
-#     # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f17"
-#     N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
+#     # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f17"
+#     N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
 #     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
 #     interactions_collection = db['additional_info']
@@ -2384,10 +2540,10 @@ async def get_raw_webhook_response_and_upsert( # Renamed for clarity
             detail="You don't have permission to access this data"
         )
 
-    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
-    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
-    # N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f19"
-    N8N_WEBHOOK_URL = "https://yfxgatcgenpobfqjsq.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f19"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f19"
+    N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f19"
     logger.info(f"Request for points calculation for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- Get MongoDB collections ---
