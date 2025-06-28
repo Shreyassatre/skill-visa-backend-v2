@@ -2090,8 +2090,8 @@ async def get_state_eligibility(
     
     # logger.info(f"Received request for /visa/analysis. Parsed calculated_points from body: {points_data_from_request_body.model_dump_json(indent=2)}")
     
-    N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f31"
-    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f31"
+    # N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f31"
+    N8N_WEBHOOK_URL = "https://ofstkcoceedervrylu.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f31"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     interactions_collection = db['additional_info']
