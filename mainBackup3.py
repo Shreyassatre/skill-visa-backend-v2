@@ -65,7 +65,7 @@ except (ConnectionFailure, OperationFailure, Exception) as e:
 
 try:
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
-    gemini_model_name = "gemini-2.0-flash-001"
+    gemini_model_name = "gemini-1.5-flash-latest"
     logger.info(f"Gemini API configured successfully for model: {gemini_model_name}")
 except Exception as e:
     logger.exception(f"Error configuring Gemini API: {e}")
@@ -414,8 +414,7 @@ def parse_resume_with_gemini(text: str) -> tuple[Optional[Dict[str, Any]], Optio
     - `"structured_data"`: Follows the schema below. Use `""` or `[]` if data is missing.
     - `"suggested_occupations"`: A list of 4–5 **broad occupation titles** (e.g., `"Software Engineer"`, `"Marketing Specialist"`, `"Registered Nurse"`) that are **plausibly mapped to ANZSCO roles**.
     - **Do not include any text, markdown, or comments before or after the JSON output.**
-    - Ensure the `"email"` field captures the candidate’s **primary email address**, and all date fields are in `"DD/MM/YYYY"` format where available.
-    - Include only higher education qualifications, Do not extract high school, secondary school
+    - Ensure the `"email"` field captures the candidate’s **primary email address**, and all date fields are in `"YYYY-MM-DD"` format where available.
 
     ---
 
@@ -430,150 +429,117 @@ def parse_resume_with_gemini(text: str) -> tuple[Optional[Dict[str, Any]], Optio
     ---
 
     **Target JSON Schema for "structured_data":**
-    {{
-        "email": "string",
-        "personal_details": {{
-            "name": "string",
-            "phone": "string",
-            "DOB": "string", //DD/MM/YYYY
-            "gender": "string",
-            "maritalStatus": "string",
-            "nationality": "string",
-            "country_residency": "string",
-            "passportDetails": {{
-                "number": "string",
-                "expiryDate": "string",
-                "issuingCountry": "string"
-            }}
-        }},
-        "education": {{
-            "hasStudiedInAustralia": "string",
-            "numberOfQualificationsCompletedInAustralia": "string",
-            "questions_if_has_studied_in_australia": [
-                {{
-                    "question": "Did you complete at least 2 years of full-time study in Australia? (Yes/No)",
-                    "answer": ""
-                }},
-                {{
-                    "question": "Was this study completed in regional Australia (ask postcode)",
-                    "answer": ""
-                }},
-                {{
-                    "question": "Did you complete a Master’s by Research or PhD in a STEM field (Science,Technology, Engineering, Mathematics) from an Australian institution?",
-                    "answer": ""
-                }},
-                {{
-                    "question": "Have you completed a Professional Year program in Australia in the last 4 years? (Yes/No)",
-                    "answer": ""
+        {{
+            "email": "string",
+            "personal_details":{{
+                "name": "string",
+                "phone": "string",
+                "DOB": "string", DD/MM/YYYY
+                "gender": "string",
+                "maritalStatus": "string",
+                "nationality": "string",
+                "country_residency": "string",
+                "passportDetails": {{
+                    "number": "string",
+                    "expiryDate": "string",
+                    "issuingCountry": "string"
                 }}
-            ],
-            "australian_education": [
-                {{
-                    "degree": "string", //Include only higher education qualifications, Do not extract high school, secondary school
-                    "fieldOfStudy": "string",
-                    "institution": "string",
-                    "country": "string",
-                    "institutionPostCode": "string",
-                    "commencementDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "completionDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "duration_in_years": "string"
-                }}
-            ],
-            "overseas_education": [
-                {{
-                    "degree": "string",  //Include only higher education qualifications, Do not extract high school, secondary school
-                    "fieldOfStudy": "string",
-                    "institution": "string",
-                    "country": "string",
-                    "commencementDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "completionDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "duration_in_years": "string"
-                }}
-            ]
-        }},
-        "workExperience": {{
-            "australian_workExperience": [
-                {{
-                    "company": "string",
-                    "role": "string",
-                    "startDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "endDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "country": "string",
-                    "postalCode": "string"
-                }}
-            ],
-            "overseas_workExperience": [
-                {{
-                    "company": "string",
-                    "role": "string",
-                    "startDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "endDate": "string", // DD/MM/YYYY or MM/YYYY
-                    "country": "string"
-                }}
-            ]
-        }},
-        "englishProficiency": {{
-            "englishLanguageTestCompleted": "string",
-            "englishExamDetails": {{
-                "examName": "string",
-                "examDate": "string", // DD/MM/YYYY or MM/YYYY
-                "expiryDate": "string",  // DD/MM/YYYY or MM/YYYY
-                "overallScore": "string",
-                "listeningScore": "string",
-                "readingScore": "string",
-                "speakingScore": "string",
-                "writingScore": "string"
             }},
-            "estimatedProficiency": "string"
-        }},
-        "if_partner": {{
-            "name": "string",
-            "occupation": "string",
-            "isAgeBelow45": "string",
-            "hasCompetentEnglish": "string",
-            "workexperiance_in_last_5_years": {{
+            "education":{{
+                "hasStudiedInAustralia": "string",
+                "numberOfQualificationsCompletedInAustralia": "string",
+                "questions_if_has_studied_in_australia": [
+                    {{
+                        "question":"Did you complete at least 2 years of full-time study in Australia? (Yes/No)",
+                        "answer":""
+                    }},
+                    {{
+                        "question":"Was this study completed in regional Australia (ask postcode)",
+                        "answer":""
+                    }},
+                    {{
+                        "question":"Did you complete a Master’s by Research or PhD in a STEM field (Science,Technology, Engineering, Mathematics) from an Australian institution?",
+                        "answer":""
+                    }},
+                    {{
+                        "question":"Have you completed a Professional Year program in Australia in the last 4 years? (Yes/No)",
+                        "answer":""
+                    }}
+                ],
+                "australian_education": [
+                    {{
+                        "degree": "string", "fieldOfStudy": "string", "institution": "string", "country": "string",
+                        "institutionPostCode": "string", "commencementDate": "string",
+                        "completionDate": "string", "duration_in_years": "string"
+                    }}
+                ],
+                "overseas_education": [
+                    {{
+                        "degree": "string", "fieldOfStudy": "string", "institution": "string", "country": "string",
+                        "commencementDate": "string",
+                        "completionDate": "string", "duration_in_years": "string"
+                    }}
+                ]
+            }},
+            "workExperience":{{
                 "australian_workExperience": [
                     {{
-                        "company": "string",
-                        "role": "string",
-                        "startDate": "string", //DD/MM/YYYY or MM/YYYY
-                        "endDate": "string", //DD/MM/YYYY or MM/YYYY
-                        "country": "string",
-                        "postalCode": "string"
+                        "company": "string", "role": "string", "startDate": "string",
+                        "endDate": "string", "country": "string", "postalCode": "string"
                     }}
                 ],
                 "overseas_workExperience": [
                     {{
-                        "company": "string",
-                        "role": "string",
-                        "startDate": "string", //DD/MM/YYYY or MM/YYYY
-                        "endDate": "string", //DD/MM/YYYY or MM/YYYY
-                        "country": "string"
+                        "company": "string", "role": "string", "startDate": "string",
+                        "endDate": "string", "country": "string"
                     }}
                 ]
-            }}
-        }},
-        "community_language_accreditation": {{
-            "holdsNAATIcertification": "string",
-            "canGiveCommunityLanguageClasses": "string"
-        }},
-        "living_in_australia": {{
-            "currentSuburb": "string",
-            "currentPostCode": "string",
-            "currentState": "string",
-            "currentVisaStatus": "string",
-            "hasLivedInAustralia": "string",
-            "numberOfDifferentStatesLivedIn": "string",
-            "satesLivedIn": [
-                {{
+            }},
+            "englishProficiency": {{
+                "englishLanguageTestCompleted,": "string",
+                "englishExamDetails": {{
+                    "examName": "string",
+                    "examDate": "string",
+                    "overallScore": "string",
+                    "listeningScore": "string",
+                    "readingScore": "string",
+                    "speakingScore": "string",
+                    "writingScore": "string"
+                }},
+                "estimatedProficiency": "string"
+            }},
+            "if_partner": {{
+                "workexperiance_in_last_5_years": {{
+                    "australian_workExperience": [
+                        {{
+                            "company": "string", "role": "string", "startDate": "string",
+                            "endDate": "string", "country": "string", "postalCode": "string"
+                        }}
+                    ],
+                    "overseas_workExperience": [
+                        {{
+                            "company": "string", "role": "string", "startDate": "string",
+                            "endDate": "string", "country": "string"
+                        }}
+                    ]
+                }},
+                "estimatedProficiency": "string"
+            }},
+            "community_language_accreditation": {{
+                "holdsNAATIcertification": "string",
+                "canGiveCommunityLanguageClasses": "string"
+            }},
+            living_in_australia: {{
+                hasLivedInAustralia": "string", // Yes/No
+                "numeberOfDiffrentStatesLivedIn": "string",
+                "satesLivedIn": [
                     "stateName": "string",
                     "postCode": "string",
                     "from": "string",
                     "to": "string"
-                }}
-            ]
+                ]
+            }}
         }}
-    }}
 
         **Complete Output Example Structure:**
         {{
