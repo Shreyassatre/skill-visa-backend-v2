@@ -11,7 +11,7 @@ import mammoth
 import uvicorn
 import PyPDF2
 from dotenv import load_dotenv
-from fastapi import Body, Depends, FastAPI, File, Path, Query, UploadFile, HTTPException, Form, Request, status, BackgroundTasks
+from fastapi import Body, Depends, FastAPI, File, Path, Query, UploadFile, HTTPException, Form, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from google import genai
@@ -28,7 +28,6 @@ from google_auth import router as google_auth_router
 from auth_endpoints import router as auth_router
 from starlette.middleware.sessions import SessionMiddleware
 
-# --- (Initial setup, imports, and global variables remain unchanged) ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -108,11 +107,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add session middleware for OAuth
 app.add_middleware(
     SessionMiddleware,
-    secret_key="YOUR_SESSION_SECRET_KEY"
+    secret_key="YOUR_SESSION_SECRET_KEY"  # Replace with a secure secret key
 )
 
+# Include the authentication routers
 app.include_router(google_auth_router, tags=["Authentication"])
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
@@ -125,154 +126,141 @@ async def startup_db_client():
 async def shutdown_db_client():
     close_db_connection()
 
+# --- Pydantic Models ---
 
-# --- CHANGE 1: Corrected all Pydantic Models for consistency ---
-# The main change is replacing default values like "" or default_factory
-# with `= None` to correctly handle optional data from the frontend.
-
+# --- Nested models for ParsedResumeData ---
 class PassportDetailsModel(BaseModel):
-    number: Optional[str] = None
-    expiryDate: Optional[str] = None
-    issuingCountry: Optional[str] = None
+    number: Optional[str] = ""
+    expiryDate: Optional[str] = ""
+    issuingCountry: Optional[str] = ""
 
 class PersonalDetailsModel(BaseModel):
-    name: Optional[str] = None
-    phone: Optional[str] = None
-    DOB: Optional[str] = None
-    gender: Optional[str] = None
-    maritalStatus: Optional[str] = None
-    nationality: Optional[str] = None
-    country_residency: Optional[str] = None
-    passportDetails: Optional[PassportDetailsModel] = None
+    name: Optional[str] = ""
+    phone: Optional[str] = ""
+    DOB: Optional[str] = ""
+    gender: Optional[str] = ""
+    maritalStatus: Optional[str] = ""
+    nationality: Optional[str] = ""
+    country_residency: Optional[str] = ""
+    passportDetails: Optional[PassportDetailsModel] = Field(default_factory=PassportDetailsModel)
 
 class QuestionAnswerModel(BaseModel):
-    question: Optional[str] = None
-    answer: Optional[str] = None
+    question: Optional[str] = ""
+    answer: Optional[str] = ""
 
 class AustralianEducationItemModel(BaseModel):
-    degree: Optional[str] = None
-    fieldOfStudy: Optional[str] = None
-    institution: Optional[str] = None
-    country: Optional[str] = None
-    institutionPostCode: Optional[str] = None
-    commencementDate: Optional[str] = None
-    completionDate: Optional[str] = None
-    duration_in_years: Optional[str] = None
+    degree: Optional[str] = ""
+    fieldOfStudy: Optional[str] = ""
+    institution: Optional[str] = ""
+    country: Optional[str] = ""
+    institutionPostCode: Optional[str] = ""
+    commencementDate: Optional[str] = ""
+    completionDate: Optional[str] = ""
+    duration_in_years: Optional[str] = ""
 
 class OverseasEducationItemModel(BaseModel):
-    degree: Optional[str] = None
-    fieldOfStudy: Optional[str] = None
-    institution: Optional[str] = None
-    country: Optional[str] = None
-    commencementDate: Optional[str] = None
-    completionDate: Optional[str] = None
-    duration_in_years: Optional[str] = None
+    degree: Optional[str] = ""
+    fieldOfStudy: Optional[str] = ""
+    institution: Optional[str] = ""
+    country: Optional[str] = ""
+    commencementDate: Optional[str] = ""
+    completionDate: Optional[str] = ""
+    duration_in_years: Optional[str] = ""
 
 class EducationDetailsModel(BaseModel):
-    hasStudiedInAustralia: Optional[str] = None
-    numberOfQualificationsCompletedInAustralia: Optional[str] = None
-    questions_if_has_studied_in_australia: List[QuestionAnswerModel] = Field(default_factory=list)
-    australian_education: List[AustralianEducationItemModel] = Field(default_factory=list)
-    overseas_education: List[OverseasEducationItemModel] = Field(default_factory=list)
+    hasStudiedInAustralia: Optional[str] = ""
+    numberOfQualificationsCompletedInAustralia: Optional[str] = ""
+    questions_if_has_studied_in_australia: List[QuestionAnswerModel] = []
+    australian_education: List[AustralianEducationItemModel] = []
+    overseas_education: List[OverseasEducationItemModel] = []
 
 class AustralianWorkExperienceItemModel(BaseModel):
-    company: Optional[str] = None
-    role: Optional[str] = None
-    startDate: Optional[str] = None
-    endDate: Optional[str] = None
-    country: Optional[str] = None
-    postalCode: Optional[str] = None
+    company: Optional[str] = ""
+    role: Optional[str] = ""
+    startDate: Optional[str] = ""
+    endDate: Optional[str] = ""
+    country: Optional[str] = ""
+    postalCode: Optional[str] = ""
 
 class OverseasWorkExperienceItemModel(BaseModel):
-    company: Optional[str] = None
-    role: Optional[str] = None
-    startDate: Optional[str] = None
-    endDate: Optional[str] = None
-    country: Optional[str] = None
+    company: Optional[str] = ""
+    role: Optional[str] = ""
+    startDate: Optional[str] = ""
+    endDate: Optional[str] = ""
+    country: Optional[str] = ""
 
 class WorkExperienceDetailsModel(BaseModel):
-    australian_workExperience: List[AustralianWorkExperienceItemModel] = Field(default_factory=list)
-    overseas_workExperience: List[OverseasWorkExperienceItemModel] = Field(default_factory=list)
+    australian_workExperience: List[AustralianWorkExperienceItemModel] = []
+    overseas_workExperience: List[OverseasWorkExperienceItemModel] = []
 
 class EnglishExamDetailsModel(BaseModel):
-    examName: Optional[str] = None
-    examDate: Optional[str] = None
-    expiryDate: Optional[str] = None # Added expiryDate to match prompt
-    overallScore: Optional[str] = None
-    listeningScore: Optional[str] = None
-    readingScore: Optional[str] = None
-    speakingScore: Optional[str] = None
-    writingScore: Optional[str] = None
+    examName: Optional[str] = ""
+    examDate: Optional[str] = ""
+    overallScore: Optional[str] = ""
+    listeningScore: Optional[str] = ""
+    readingScore: Optional[str] = ""
+    speakingScore: Optional[str] = ""
+    writingScore: Optional[str] = ""
 
 class EnglishProficiencyDetailsModel(BaseModel):
-    englishLanguageTestCompleted: Optional[str] = None
-    englishExamDetails: Optional[EnglishExamDetailsModel] = None
-    estimatedProficiency: Optional[str] = None
+    englishLanguageTestCompleted: Optional[str] = ""
+    englishExamDetails: Optional[EnglishExamDetailsModel] = Field(default_factory=EnglishExamDetailsModel)
+    estimatedProficiency: Optional[str] = ""
 
 class PartnerWorkExperienceModel(BaseModel):
-    australian_workExperience: List[AustralianWorkExperienceItemModel] = Field(default_factory=list)
-    overseas_workExperience: List[OverseasWorkExperienceItemModel] = Field(default_factory=list)
+    australian_workExperience: Optional[List[AustralianWorkExperienceItemModel]] = Field(default_factory=list)
+    overseas_workExperience: Optional[List[OverseasWorkExperienceItemModel]] = Field(default_factory=list)
 
-# ATTENTION: Correctly defined IfPartnerModel to match the LLM prompt schema
 class IfPartnerModel(BaseModel):
-    name: Optional[str] = None
-    occupation: Optional[str] = None
-    isAgeBelow45: Optional[str] = None
-    hasCompetentEnglish: Optional[str] = None
-    # ATTENTION: Using alias to match typo in source data (LLM prompt/frontend payload)
     work_experience_in_last_5_years: Optional[PartnerWorkExperienceModel] = Field(
-        None,
+        default_factory=PartnerWorkExperienceModel, # This expects an object/dict
         alias="workexperiance_in_last_5_years",
         description="Partner's work experience in the last 5 years"
     )
-    # This field was in the old model but not in the prompt's `if_partner` object.
-    # If you still need it, it should be here. If not, it can be removed.
     estimatedProficiency: Optional[str] = Field(None, description="Partner's estimated English proficiency")
 
 class CommunityLanguageAccreditationModel(BaseModel):
-    holdsNAATIcertification: Optional[str] = None
-    canGiveCommunityLanguageClasses: Optional[str] = None
+    holdsNAATIcertification: Optional[str] = ""
+    canGiveCommunityLanguageClasses: Optional[str] = ""
 
 class StateLivedInModel(BaseModel):
-    stateName: Optional[str] = None
-    postCode: Optional[str] = None
-    from_date: Optional[str] = Field(None, alias="from", serialization_alias="from")
-    to_date: Optional[str] = Field(None, alias="to", serialization_alias="to")
+    stateName: Optional[str] = Field(None)
+    postCode: Optional[str] = Field(None)
+    # 'from' is a Python keyword, so an alias is necessary.
+    from_date: Optional[str] = Field(None, alias="from", serialization_alias="from", description="Start date of living in the state")
+    to_date: Optional[str] = Field(None, alias="to", serialization_alias="to", description="End date of living in the state")
 
-# ATTENTION: Correctly defined LivingInAustraliaModel to match prompt schema and typos
 class LivingInAustraliaModel(BaseModel):
-    currentSuburb: Optional[str] = None
-    currentPostCode: Optional[str] = None
-    currentState: Optional[str] = None
-    currentVisaStatus: Optional[str] = None
-    hasLivedInAustralia: Optional[str] = None
-    # Using alias to match typo "numberOfDifferentStatesLivedIn" in prompt
+    hasLivedInAustralia: Optional[str] = Field(None, description="Has the candidate lived in Australia? (Yes/No)")
+    # Schema key "numeberOfDiffrentStatesLivedIn" (typo)
     number_of_different_states_lived_in: Optional[str] = Field(
         None,
-        alias="numberOfDifferentStatesLivedIn"
+        alias="numeberOfDiffrentStatesLivedIn", # Matches schema key with typo
+        description="Number of different states lived in Australia"
     )
-    # Using alias to match typo "satesLivedIn" in prompt
+    # Schema key "satesLivedIn" (typo)
     states_lived_in: Optional[List[StateLivedInModel]] = Field(
         default_factory=list,
-        alias="satesLivedIn"
+        alias="satesLivedIn", # Matches schema key with typo
+        description="Details of states lived in Australia"
     )
 
+# Base resume data structure matching the Gemini prompt schema
 class ParsedResumeDataBase(BaseModel):
-    email: Optional[EmailStr] = None
-    personal_details: Optional[PersonalDetailsModel] = None
-    education: Optional[EducationDetailsModel] = None
-    workExperience: Optional[WorkExperienceDetailsModel] = None
-    englishProficiency: Optional[EnglishProficiencyDetailsModel] = None
-    if_partner: Optional[IfPartnerModel] = None
-    community_language_accreditation: Optional[CommunityLanguageAccreditationModel] = None
-    living_in_australia: Optional[LivingInAustraliaModel] = None
+    email: Optional[EmailStr] = Field(None, description="Candidate's email, crucial for identification and updates")
+    personal_details: Optional[PersonalDetailsModel] = Field(default_factory=PersonalDetailsModel)
+    education: Optional[EducationDetailsModel] = Field(default_factory=EducationDetailsModel)
+    workExperience: Optional[WorkExperienceDetailsModel] = Field(default_factory=WorkExperienceDetailsModel)
+    englishProficiency: Optional[EnglishProficiencyDetailsModel] = Field(default_factory=EnglishProficiencyDetailsModel)
+    if_partner: Optional[IfPartnerModel] = Field(default_factory=IfPartnerModel, description="Details if the candidate has a partner")
+    community_language_accreditation: Optional[CommunityLanguageAccreditationModel] = Field(default_factory=CommunityLanguageAccreditationModel)
+    living_in_australia: Optional[LivingInAustraliaModel] = Field(default_factory=LivingInAustraliaModel, description="Details about living in Australia")
 
-    class Config:
-        anystr_strip_whitespace = True
-        
+# Model for data stored in resume_collection
 class ParsedResumeDataStorage(ParsedResumeDataBase):
     pass
 
+# --- Occupation Suggestion Structure ---
 class MatchedOccupationDetail(BaseModel):
     matchedOccupation: str
     matchedANZSCO: str
@@ -286,6 +274,7 @@ class OccupationSuggestionStorage(BaseModel):
     matched_details: List[MatchedOccupationDetail] = Field(default=[], description="ANZSCO matches based on embedding similarity")
     last_updated: Optional[str] = None
 
+# --- API Response Models ---
 class ApiResponse(BaseModel):
     uploader_email: str
     candidate_email: Optional[EmailStr] = None
@@ -305,20 +294,21 @@ class OccupationSuggestionResponse(BaseModel):
     candidate_email: EmailStr
     suggestions: OccupationSuggestionStorage
 
-    # --- CHANGE 3: Removed duplicated `from_storage` method ---
     @classmethod
     def from_storage(cls, storage: OccupationSuggestionStorage):
+        # Deduplicate matched_details based on anzsco_code
         seen_codes = set()
         unique_matched_details = []
         for detail in storage.matched_details:
-            if detail.matchedANZSCO not in seen_codes:
-                seen_codes.add(detail.matchedANZSCO)
+            if detail.anzsco_code not in seen_codes:
+                seen_codes.add(detail.anzsco_code)
                 unique_matched_details.append(detail)
-        
+
+        # Create a new OccupationSuggestionStorage with unique matched_details
         unique_suggestions = OccupationSuggestionStorage(
             uploader_email=storage.uploader_email,
             candidate_email=storage.candidate_email,
-            suggested_by_llm=storage.suggested_by_llm,
+            suggested_by_llm=storage.suggested_by_llm,  # Keep LLM suggestions as is
             matched_details=unique_matched_details,
             last_updated=storage.last_updated
         )
@@ -329,13 +319,38 @@ class OccupationSuggestionResponse(BaseModel):
             suggestions=unique_suggestions
         )
 
+    @classmethod
+    def from_storage(cls, storage: OccupationSuggestionStorage):
+        # Deduplicate matched_details based on anzsco_code
+        seen_codes = set()
+        unique_matched_details = []
+        for detail in storage.matched_details:
+            if detail.anzsco_code not in seen_codes:
+                seen_codes.add(detail.anzsco_code)
+                unique_matched_details.append(detail)
+
+        # Create a new OccupationSuggestionStorage with unique matched_details
+        unique_suggestions = OccupationSuggestionStorage(
+            uploader_email=storage.uploader_email,
+            candidate_email=storage.candidate_email,
+            suggested_by_llm=storage.suggested_by_llm,  # Keep LLM suggestions as is
+            matched_details=unique_matched_details,
+            last_updated=storage.last_updated
+        )
+
+        return cls(
+            uploader_email=storage.uploader_email,
+            candidate_email=storage.candidate_email,
+            suggestions=unique_suggestions
+        )
+
+# --- Models for PUT/Update ---
+# UpdateCandidateDataRequest now directly uses the full ParsedResumeDataBase structure for replacement
 class UpdateCandidateDataRequest(ParsedResumeDataBase):
-    pass
+    class Config:
+        anystr_strip_whitespace = True
 
-# --- (Helper functions like extract_text_from_pdf, parse_resume_with_gemini, etc. remain unchanged) ---
-# --- (The Gemini prompt is also fine as it is) ---
-# --- (Your /parse/file endpoint is also fine) ---
-
+# --- Helper Functions ---
 def extract_text_from_pdf(file_path: str, filename: str = "file") -> str:
     text = ""
     try:
@@ -740,7 +755,6 @@ def find_best_occupation_matches(
     return matched_results
 
 
-# --- CHANGE 2: Updated data storage to use exclude_unset=True ---
 def store_resume_data(parsed_data: Dict[str, Any], uploader_email: str) -> tuple[str, Optional[str], Optional[str]]:
     uploader_email_lower = uploader_email.lower()
     candidate_email = parsed_data.get("email")
@@ -753,9 +767,7 @@ def store_resume_data(parsed_data: Dict[str, Any], uploader_email: str) -> tuple
     logger.info(f"Storing/updating candidate resume '{candidate_email_lower}' for uploader '{uploader_email_lower}' in collection '{RESUME_COLLECTION_NAME}'")
 
     try:
-        # Using `exclude_unset=True` ensures that only fields present in the parsed_data
-        # are stored, keeping the DB clean and consistent with the PUT endpoint.
-        validated_storage_data = ParsedResumeDataStorage(**parsed_data).dict(exclude_unset=True)
+        validated_storage_data = ParsedResumeDataStorage(**parsed_data).dict(exclude_none=True) # Use exclude_none to match Pydantic defaults
     except Exception as pyd_err:
          logger.error(f"Pydantic validation failed before storing resume data for {candidate_email_lower}: {pyd_err}")
          return "failed", f"Data validation failed before storage: {pyd_err}", candidate_email_lower
@@ -806,7 +818,6 @@ def store_resume_data(parsed_data: Dict[str, Any], uploader_email: str) -> tuple
         return "failed", "An unexpected error occurred during resume data storage.", candidate_email_lower
 
 
-# --- (The rest of the code is correct and requires no changes) ---
 def store_occupation_suggestions(
     uploader_email: str,
     candidate_email: str,
@@ -856,6 +867,8 @@ def store_occupation_suggestions(
         logger.exception(f"Error storing occupation suggestions for {storage_id}: {e}")
         return "failed", "An unexpected error occurred during suggestion storage."
 
+# --- API Endpoints ---
+
 def extract_text_from_docx(file_path: str, filename: str) -> str:
     try:
         logger.info(f"Extracting text from DOCX: {filename}")
@@ -866,12 +879,200 @@ def extract_text_from_docx(file_path: str, filename: str) -> str:
             return text
     except Exception as e:
         logger.error(f"Failed to extract text from DOCX file {filename}: {e}")
+        # Re-raise as a ValueError to be caught by the main exception handler
         raise ValueError(f"Could not process the Word document '{filename}'. It might be corrupted or in an unsupported format.")
+
+# @app.post("/api/parse/file", response_model=ApiResponse, status_code=200, tags=["Parsing & Storage"])
+# async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: str = Form(...),
+#     current_user: Dict[str, Any] = Depends(get_current_user)
+# ):
+#     # Verify if the current user has access to this data
+#     if not verify_access(current_user, uploader_email):
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="You don't have permission to access this data"
+#         )
+#     temp_file_path = None
+#     structured_data: Optional[Dict[str, Any]] = None
+#     suggested_occupations: Optional[List[str]] = []
+#     matched_occupation_details: List[MatchedOccupationDetail] = []
+#     resume_storage_status = "not_attempted"
+#     occupation_suggestion_status = "not_attempted"
+#     db_message_resume = "Resume storage not attempted."
+#     db_message_occupation = "Occupation suggestion storage not attempted."
+#     candidate_email_processed: Optional[str] = None
+#     status = "error"
+#     final_message = "Processing failed."
+#     filename = file.filename or "unknown.pdf"
+
+#     if not filename.lower().endswith('.pdf'):
+#         raise HTTPException(status_code=400, detail="Invalid file type. Only PDF files are supported.")
+#     if not uploader_email or "@" not in uploader_email:
+#          raise HTTPException(status_code=400, detail="Valid uploader_email is required.")
+
+#     try:
+#         logger.info(f"Request from '{uploader_email}' to parse file: {filename}")
+
+#         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as disk_temp_file:
+#             temp_file_path = disk_temp_file.name
+#             content = await file.read()
+#             if not content:
+#                  raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+#             if len(content) > MAX_FILE_SIZE:
+#                  raise HTTPException(status_code=413, detail=f"File size exceeds {MAX_FILE_SIZE / (1024*1024):.1f} MB limit.")
+#             disk_temp_file.write(content)
+#             logger.info(f"Saved {filename} temporarily to: {temp_file_path}")
+
+#         logger.info(f"Extracting text from PDF: {filename}")
+#         text = extract_text_from_pdf(temp_file_path, filename)
+#         if not text.strip():
+#             logger.warning(f"No text could be extracted from {filename}. Aborting parsing.")
+#             raise HTTPException(status_code=400, detail="Could not extract text from the PDF (possibly image-based or empty).")
+
+#         logger.info(f"Parsing extracted text with Gemini for: {filename}")
+#         structured_data, suggested_occupations = parse_resume_with_gemini(text)
+
+#         if not structured_data or not structured_data.get("email"):
+#             status = "parsing_failed"
+#             final_message = "Failed to parse resume or extract mandatory candidate email."
+#             logger.error(f"Parsing failed or email missing for {filename}")
+#             # Validate with Pydantic before raising HTTPException to get more specific error
+#             try:
+#                 ParsedResumeDataStorage(**(structured_data or {}))
+#             except Exception as pyd_err:
+#                  final_message = f"Failed to parse resume or structure is invalid: {pyd_err}"
+#                  logger.error(f"Pydantic validation failed for parsed data from {filename}: {pyd_err}")
+#             raise HTTPException(status_code=500, detail=final_message)
+
+#         candidate_email_processed = structured_data.get("email")
+#         status = "success"
+
+#         logger.info(f"Storing parsed resume data in MongoDB for: {filename}")
+#         resume_storage_status, db_message_resume, _ = store_resume_data(structured_data, uploader_email)
+#         if resume_storage_status == "failed":
+#              logger.error(f"Failed to store resume data for {candidate_email_processed}. Message: {db_message_resume}")
+#              status = "partial_success"
+#              final_message = f"Parsing succeeded, but failed to store resume data. {db_message_resume}"
+
+#         if suggested_occupations and occupation_data:
+#             logger.info(f"Performing occupation matching for {len(suggested_occupations)} suggestions from {filename}")
+#             occupation_suggestion_status = "processing"
+#             matched_occupation_details = find_best_occupation_matches(
+#                 suggested_occupations,
+#                 occupation_data,
+#                 GOOGLE_API_KEY
+#             )
+#             occupation_suggestion_status = "matching_complete"
+#             if not matched_occupation_details:
+#                  logger.info(f"No ANZSCO matches found meeting threshold for suggestions from {filename}")
+#         elif not occupation_data:
+#             logger.warning("Occupation matching skipped: Embeddings data not loaded.")
+#             occupation_suggestion_status = "disabled"
+#         else:
+#             logger.info("No occupation suggestions provided by LLM.")
+#             occupation_suggestion_status = "no_suggestions"
+
+
+#         if suggested_occupations or matched_occupation_details:
+#             logger.info(f"Storing occupation suggestions/matches in MongoDB for: {filename}")
+#             occ_store_status, db_message_occupation = store_occupation_suggestions(
+#                 uploader_email,
+#                 candidate_email_processed,
+#                 suggested_occupations or [],
+#                 matched_occupation_details
+#             )
+#             occupation_suggestion_status = occ_store_status
+#             if occ_store_status == "failed":
+#                 logger.error(f"Failed to store occupation suggestions for {candidate_email_processed}. Message: {db_message_occupation}")
+#                 if status == "success": status = "partial_success"
+#                 final_message += f" Failed to store occupation suggestions. {db_message_occupation}"
+#         else:
+#              db_message_occupation = "No suggestions or matches to store."
+
+#         if status == "success":
+#              final_message = "Resume processed and suggestions generated successfully."
+#         elif status == "partial_success" and not final_message.startswith("Parsing succeeded"): # If not already set by resume store failure
+#              final_message = f"Processing partially successful. Check details. Resume Store: {db_message_resume} Suggestion Store: {db_message_occupation}"
+        
+#         parsed_data_summary_name = ""
+#         if structured_data and structured_data.get("personal_details"):
+#             parsed_data_summary_name = structured_data.get("personal_details", {}).get("name")
+
+
+#         parsed_data_summary = {
+#              "name": parsed_data_summary_name,
+#              "email": candidate_email_processed,
+#              "suggestions_count": len(suggested_occupations or []),
+#              "matches_found": len(matched_occupation_details)
+#          }
+
+#         return ApiResponse(
+#             uploader_email=uploader_email,
+#             candidate_email=candidate_email_processed,
+#             parsed_data_summary=parsed_data_summary,
+#             status=status,
+#             resume_storage_status=resume_storage_status,
+#             occupation_suggestion_status=occupation_suggestion_status,
+#             message=final_message
+#         )
+
+#     except HTTPException as e:
+#         logger.error(f"HTTP Error for {uploader_email}, file {filename}: {e.detail}")
+#         return JSONResponse(
+#             status_code=e.status_code,
+#             content=ApiResponse(
+#                 uploader_email=uploader_email,
+#                 candidate_email=candidate_email_processed,
+#                 status="error",
+#                 resume_storage_status=resume_storage_status,
+#                 occupation_suggestion_status=occupation_suggestion_status,
+#                 message=e.detail
+#             ).dict(exclude_none=True)
+#         )
+#     except (ValueError, json.JSONDecodeError, PyPDF2.errors.PdfReadError) as ve:
+#          logger.error(f"Processing Error for {uploader_email}, file {filename}: {ve}", exc_info=False)
+#          error_code = 422
+#          err_status_detail = "parsing_failed" if "Gemini" in str(ve) or "JSON" in str(ve) else "extraction_failed"
+#          if isinstance(ve, PyPDF2.errors.PdfReadError): error_code = 400
+
+#          return JSONResponse(
+#              status_code=error_code,
+#              content=ApiResponse(
+#                  uploader_email=uploader_email,
+#                  candidate_email=candidate_email_processed,
+#                  status=err_status_detail,
+#                  resume_storage_status=resume_storage_status,
+#                  occupation_suggestion_status=occupation_suggestion_status,
+#                  message=f"Failed to process resume: {ve}"
+#              ).dict(exclude_none=True)
+#          )
+#     except Exception as e:
+#         logger.exception(f"Unexpected Internal Error for {uploader_email}, file {filename}: {e}")
+#         return JSONResponse(
+#              status_code=500,
+#              content=ApiResponse(
+#                  uploader_email=uploader_email,
+#                  candidate_email=candidate_email_processed,
+#                  status="internal_error",
+#                  resume_storage_status=resume_storage_status,
+#                  occupation_suggestion_status=occupation_suggestion_status,
+#                  message="An unexpected internal server error occurred."
+#              ).dict(exclude_none=True)
+#         )
+#     finally:
+#         if temp_file_path and os.path.exists(temp_file_path):
+#             try:
+#                 os.unlink(temp_file_path)
+#             except Exception as unlink_err:
+#                  logger.error(f"Error deleting temp file {temp_file_path}: {unlink_err}")
+#         if file:
+#              await file.close()
 
 @app.post("/api/parse/file", response_model=ApiResponse, status_code=200, tags=["Parsing & Storage"])
 async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: str = Form(...),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    # Verify if the current user has access to this data
     if not verify_access(current_user, uploader_email):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -889,8 +1090,9 @@ async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: s
     candidate_email_processed: Optional[str] = None
     status = "error"
     final_message = "Processing failed."
-    filename = file.filename or "unknown.file" 
-    
+    filename = file.filename or "unknown.file" # CHANGED: More generic default
+
+    # NEW: Define allowed extensions and validate the uploaded file
     allowed_extensions = {".pdf", ".docx"}
     file_ext = os.path.splitext(filename)[1].lower()
     if file_ext not in allowed_extensions:
@@ -902,6 +1104,7 @@ async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: s
     try:
         logger.info(f"Request from '{uploader_email}' to parse file: {filename}")
 
+        # CHANGED: Use the dynamic file extension for the temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as disk_temp_file:
             temp_file_path = disk_temp_file.name
             content = await file.read()
@@ -912,6 +1115,7 @@ async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: s
             disk_temp_file.write(content)
             logger.info(f"Saved {filename} temporarily to: {temp_file_path}")
 
+        # NEW: Conditional text extraction based on file type
         text = ""
         if file_ext == '.pdf':
             logger.info(f"Extracting text from PDF: {filename}")
@@ -923,7 +1127,10 @@ async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: s
         if not text.strip():
             logger.warning(f"No text could be extracted from {filename}. Aborting parsing.")
             raise HTTPException(status_code=400, detail=f"Could not extract text from the {file_ext.upper()} file (possibly image-based or empty).")
-        
+
+        # --- The rest of your logic remains exactly the same ---
+        # It operates on the 'text' variable, which is now populated from either PDF or DOCX.
+
         logger.info(f"Parsing extracted text with Gemini for: {filename}")
         structured_data, suggested_occupations = parse_resume_with_gemini(text)
 
@@ -1027,7 +1234,7 @@ async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: s
          logger.error(f"Processing Error for {uploader_email}, file {filename}: {ve}", exc_info=False)
          error_code = 422
          err_status_detail = "parsing_failed" if "Gemini" in str(ve) or "JSON" in str(ve) else "extraction_failed"
-         if isinstance(ve, PyPDF2.errors.PdfReadError) or "Word document" in str(ve):
+         if isinstance(ve, PyPDF2.errors.PdfReadError) or "Word document" in str(ve): # CHANGED: Handle DOCX errors too
             error_code = 400
 
          return JSONResponse(
@@ -1063,6 +1270,7 @@ async def parse_file_and_suggest(file: UploadFile = File(...), uploader_email: s
         if file:
              await file.close()
 
+
 @app.get(
     "/api/candidates/{uploader_email}/{candidate_email}",
     response_model=CandidateDataResponse,
@@ -1078,6 +1286,7 @@ async def get_candidate_data(
     candidate_email: str = Path(..., description="Email of the candidate."),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    # Verify if the current user has access to this data
     if not verify_access(current_user, uploader_email):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1103,8 +1312,6 @@ async def get_candidate_data(
             parsed_data = candidate_info.get('parsed_resume_data', {})
 
             try:
-                # This is correct. When sending data OUT, we want a full object.
-                # Pydantic will correctly populate missing fields with None.
                 validated_data = ParsedResumeDataStorage(**parsed_data)
             except Exception as pyd_err:
                  logger.error(f"Retrieved resume data for {candidate_email_lower} failed Pydantic validation: {pyd_err}")
@@ -1127,6 +1334,7 @@ async def get_candidate_data(
         logger.exception(f"Unexpected error retrieving resume data for candidate '{candidate_email_lower}': {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
+
 @app.put(
     "/api/candidates/{uploader_email}/{candidate_email}",
     status_code=200,
@@ -1147,6 +1355,7 @@ async def update_candidate_data(
     updated_data: UpdateCandidateDataRequest = Body(...),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    # Verify if the current user has access to this data
     if not verify_access(current_user, uploader_email):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1162,15 +1371,13 @@ async def update_candidate_data(
     candidate_email_lower = candidate_email.lower()
 
     if updated_data.email and updated_data.email.lower() != candidate_email_lower:
-        logger.warning(f"Update rejected: Path email '{candidate_email_lower}' does not match body email '{updated_data.email.lower()}'.")
+        logger.error(f"Update rejected: Path email '{candidate_email_lower}' does not match body email '{updated_data.email.lower()}'.")
         raise HTTPException(status_code=400, detail="Candidate email in URL path and request body must match.")
-    
     if not updated_data.email:
-         logger.warning(f"Update rejected: Candidate email missing in request body for replacement.")
+         logger.error(f"Update rejected: Candidate email missing in request body for replacement.")
          raise HTTPException(status_code=400, detail="Candidate email is required in the request body for update.")
 
-    # This is already correct from the previous step.
-    update_payload = updated_data.dict(exclude_unset=True) 
+    update_payload = updated_data.dict(exclude_none=True) # exclude_none is good practice
     logger.debug(f"Update payload prepared for MongoDB: {update_payload}")
 
     try:
@@ -1182,10 +1389,10 @@ async def update_candidate_data(
         if result.matched_count == 0:
             logger.warning(f"Update failed: Uploader '{uploader_email}' or Candidate '{candidate_email}' not found.")
             raise HTTPException(status_code=404, detail="Uploader or Candidate not found.")
-        
-        mod_status = "modified" if result.modified_count > 0 else "matched (no change)"
-        logger.info(f"Successfully processed update request for candidate '{candidate_email}' ({mod_status}).")
-        return {"message": "Candidate data update processed successfully."}
+        elif result.modified_count >= 0:
+            mod_status = "modified" if result.modified_count > 0 else "matched (no change)"
+            logger.info(f"Successfully processed update request for candidate '{candidate_email}' ({mod_status}).")
+            return {"message": "Candidate data update processed successfully."}
 
     except OperationFailure as op_err:
         logger.error(f"DB failure during update for candidate '{candidate_email}': {op_err.details}", exc_info=True)
@@ -1193,194 +1400,7 @@ async def update_candidate_data(
     except Exception as e:
         logger.exception(f"Unexpected error during update for candidate '{candidate_email}': {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred during update.")
-    
-class QuestionAnswer(BaseModel):
-    question: str
-    answer: str
-    criteria: Optional[str] = None # Optional context for the question
 
-class CandidateResponses(BaseModel):
-    answers: List[QuestionAnswer]
-
-class EnrichmentRequest(BaseModel):
-    candidate_responses: CandidateResponses
-
-class EnrichmentResponse(BaseModel):
-    message: str
-    uploader_email: str
-    candidate_email: str
-
-def enrich_profile_with_gemini(current_data: Dict[str, Any], new_qa: List[Dict[str, str]]) -> Optional[Dict[str, Any]]:
-    """
-    Uses Gemini to update a candidate's JSON profile based on new Q&A.
-    (This is the more robust version)
-    """
-    if not new_qa:
-        logger.warning("Enrichment called with no new Q&A. Returning original data.")
-        return current_data
-
-    current_data_json = json.dumps(current_data, indent=2)
-    new_qa_json = json.dumps(new_qa, indent=2)
-
-    # Using the improved prompt from below
-    prompt = f"""
-    You are an intelligent data-updating assistant. Your task is to update a JSON object representing a person's profile using new information provided as a list of questions and answers.
-
-    **Instructions:**
-    1.  **Analyze the "current_profile_json"**. This is the existing data.
-    2.  **Analyze the "new_information_qa"**. This contains new facts about the person.
-    3.  **Update the "current_profile_json"** by modifying or adding values based on the "new_information_qa".
-    4.  **CRITICAL: Your response MUST contain ONLY the raw JSON object and nothing else.** Do not include any commentary, explanations, or markdown like ```json.
-    5.  If a question's answer seems irrelevant or doesn't map to any field in the schema, ignore it.
-    6.  Ensure the final output strictly adheres to the provided JSON schema. Pay close attention to nested objects and lists.
-
-    ---
-
-    **Target JSON Schema (Your output MUST follow this structure):**
-    {{
-        "email": "string",
-        "personal_details": {{"name": "string", "phone": "string", "DOB": "string", "gender": "string", "maritalStatus": "string", "nationality": "string", "country_residency": "string", "passportDetails": {{"number": "string", "expiryDate": "string", "issuingCountry": "string"}} }},
-        "education": {{"hasStudiedInAustralia": "string", "numberOfQualificationsCompletedInAustralia": "string", "questions_if_has_studied_in_australia": [ {{"question": "string", "answer": "string"}} ], "australian_education": [ {{"degree": "string", "fieldOfStudy": "string", "institution": "string", "country": "string", "institutionPostCode": "string", "commencementDate": "string", "completionDate": "string", "duration_in_years": "string"}} ], "overseas_education": [ {{"degree": "string", "fieldOfStudy": "string", "institution": "string", "country": "string", "commencementDate": "string", "completionDate": "string", "duration_in_years": "string"}} ] }},
-        "workExperience": {{"australian_workExperience": [ {{"company": "string", "role": "string", "startDate": "string", "endDate": "string", "country": "string", "postalCode": "string"}} ], "overseas_workExperience": [ {{"company": "string", "role": "string", "startDate": "string", "endDate": "string", "country": "string"}} ] }},
-        "englishProficiency": {{"englishLanguageTestCompleted": "string", "englishExamDetails": {{"examName": "string", "examDate": "string", "expiryDate": "string", "overallScore": "string", "listeningScore": "string", "readingScore": "string", "speakingScore": "string", "writingScore": "string"}}, "estimatedProficiency": "string"}},
-        "if_partner": {{"name": "string", "occupation": "string", "isAgeBelow45": "string", "hasCompetentEnglish": "string", "workexperiance_in_last_5_years": {{"australian_workExperience": [], "overseas_workExperience": []}} }},
-        "community_language_accreditation": {{"holdsNAATIcertification": "string", "canGiveCommunityLanguageClasses": "string"}},
-        "living_in_australia": {{"currentSuburb": "string", "currentPostCode": "string", "currentState": "string", "currentVisaStatus": "string", "hasLivedInAustralia": "string", "numberOfDifferentStatesLivedIn": "string", "satesLivedIn": [ {{"stateName": "string", "postCode": "string", "from": "string", "to": "string"}} ] }}
-    }}
-
-    ---
-
-    **Input Data:**
-
-    **1. Current Profile JSON (`current_profile_json`):**
-    ```json
-    {current_data_json}
-    ```
-
-    **2. New Information Q&A (`new_information_qa`):**
-    ```json
-    {new_qa_json}
-    ```
-
-    ---
-    
-    **Output (Return ONLY the updated and complete JSON object):**
-    """
-
-    try:
-        response = gemini_client.models.generate_content(
-            model=f"models/{gemini_model_name}",
-            contents=prompt,
-        )
-        raw_content = response.text
-        logger.info(f"RAW GEMINI ENRICHMENT RESPONSE:\n{raw_content}") # ADD THIS LINE FOR DEBUGGING
-
-        # --- THIS IS THE ROBUST FIX ---
-        # Find the start and end of the JSON object in the response
-        json_start_index = raw_content.find('{')
-        json_end_index = raw_content.rfind('}')
-
-        if json_start_index == -1 or json_end_index == -1:
-            logger.error(f"Could not find a JSON object in the LLM response. Response: {raw_content}")
-            raise ValueError("LLM response did not contain a valid JSON object.")
-
-        # Extract the JSON string
-        json_string = raw_content[json_start_index : json_end_index + 1]
-        
-        updated_data = json.loads(json_string)
-        logger.info("Successfully extracted and parsed enriched profile data from Gemini.")
-        return updated_data
-        
-    except json.JSONDecodeError as json_err:
-        logger.error(f"Failed to decode extracted JSON from Gemini during enrichment. Error: {json_err}. Extracted String:\n{json_string}")
-        raise Exception("Enrichment failed due to invalid JSON structure in LLM response.")
-    except Exception as e:
-        logger.exception(f"Error during Gemini enrichment API call or processing: {e}")
-        raise Exception(f"An unexpected error occurred during profile enrichment: {e}")
-    
-@app.post(
-    "/api/candidates/{uploader_email}/{candidate_email}/enrich",
-    response_model=EnrichmentResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Enrich a candidate's profile using Q&A",
-    tags=["Candidate Data"]
-)
-async def enrich_candidate_profile(
-    uploader_email: str = Path(...),
-    candidate_email: str = Path(...),
-    enrichment_data: EnrichmentRequest = Body(...),
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """
-    Updates a candidate's profile by interpreting answers to specific questions.
-    This endpoint fetches the current profile, sends it to an LLM along with the
-    new Q&A, and uses the LLM's response to update the profile in the database.
-    """
-    if not verify_access(current_user, uploader_email):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to access this data"
-        )
-    
-    uploader_email_lower = uploader_email.lower()
-    candidate_email_lower = candidate_email.lower()
-    
-    # Step 1: Fetch current candidate data
-    try:
-        uploader_doc = resume_collection.find_one(
-            {"_id": uploader_email_lower, "candidates.candidate_email": candidate_email_lower},
-            {"candidates.$": 1}
-        )
-        
-        current_profile_data = {}
-        if uploader_doc and 'candidates' in uploader_doc and uploader_doc['candidates']:
-            candidate_info = uploader_doc['candidates'][0]
-            current_profile_data = candidate_info.get('parsed_resume_data', {})
-        else:
-            # If the candidate doesn't exist, we can't enrich them.
-            # Alternatively, you could start with an empty object if you want to create on-the-fly.
-            logger.warning(f"Enrichment failed: Candidate '{candidate_email_lower}' not found for uploader '{uploader_email_lower}'.")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found.")
-            
-    except Exception as e:
-        logger.exception(f"DB error fetching profile for enrichment: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not retrieve current profile.")
-        
-    # Step 2: Call Gemini to get the enriched data
-    try:
-        qa_list = [answer.dict() for answer in enrichment_data.candidate_responses.answers]
-        enriched_data = enrich_profile_with_gemini(current_profile_data, qa_list)
-        if not enriched_data:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="LLM failed to generate an enriched profile.")
-            
-        # Validate the enriched data against our Pydantic model to ensure correctness
-        validated_enriched_data = ParsedResumeDataStorage(**enriched_data).dict(exclude_unset=True)
-
-    except Exception as e:
-        logger.exception(f"LLM enrichment process failed for {candidate_email_lower}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-    # Step 3: Update the database with the new, complete profile
-    try:
-        result = resume_collection.update_one(
-            {"_id": uploader_email_lower, "candidates.candidate_email": candidate_email_lower},
-            {"$set": {"candidates.$.parsed_resume_data": validated_enriched_data}}
-        )
-
-        if result.matched_count == 0:
-            # This should not happen if the initial fetch was successful, but it's a good safeguard.
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate disappeared during update.")
-        
-        logger.info(f"Successfully enriched and updated profile for candidate '{candidate_email_lower}'.")
-        return EnrichmentResponse(
-            message="Candidate profile enriched successfully.",
-            uploader_email=uploader_email,
-            candidate_email=candidate_email
-        )
-
-    except Exception as e:
-        logger.exception(f"DB error saving enriched profile for {candidate_email_lower}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save enriched profile.")
 
 @app.get(
     "/api/occupations/{uploader_email}/{candidate_email}",
@@ -2252,57 +2272,6 @@ async def get_raw_webhook_response( # Renamed function for clarity
     except Exception as e_general: # Catch any other unexpected errors
         logger.exception(f"An unexpected error occurred during or after webhook call: {e_general}")
         raise HTTPException(status_code=500, detail="Internal server error processing webhook interaction.")
-    
-async def enrich_profile_in_background(uploader_email: str, candidate_email: str, webhook_payload: Dict[str, Any]):
-    """
-    A background task to enrich a user's profile based on webhook data.
-    This function handles its own errors and does not raise exceptions.
-    """
-    logger.info(f"[BACKGROUND] Starting enrichment for {candidate_email} based on webhook data.")
-    try:
-        # Step 1: Fetch the current profile data from the main resume_collection
-        uploader_doc = resume_collection.find_one(
-            {"_id": uploader_email, "candidates.candidate_email": candidate_email},
-            {"candidates.$": 1}
-        )
-
-        current_profile_data = {}
-        if uploader_doc and 'candidates' in uploader_doc and uploader_doc['candidates']:
-            candidate_info = uploader_doc['candidates'][0]
-            current_profile_data = candidate_info.get('parsed_resume_data', {})
-        else:
-            logger.error(f"[BACKGROUND] Could not find candidate {candidate_email} to enrich. Aborting task.")
-            return # Exit the task gracefully
-
-        # Step 2: Format the webhook data into the Q&A list the LLM expects
-        # This creates a generic Q&A format from the webhook's key-value pairs.
-        qa_list = [{"question": str(key), "answer": str(value), "criteria": "Webhook Data"} for key, value in webhook_payload.items()]
-        
-        if not qa_list:
-            logger.warning(f"[BACKGROUND] Webhook payload for {candidate_email} was empty. No enrichment to perform.")
-            return
-
-        # Step 3: Call the LLM to get the enriched data
-        enriched_data = enrich_profile_with_gemini(current_profile_data, qa_list)
-        if not enriched_data:
-            logger.error(f"[BACKGROUND] LLM failed to return enriched data for {candidate_email}.")
-            return
-
-        # Validate the response from the LLM to ensure its structure is correct
-        validated_enriched_data = ParsedResumeDataStorage(**enriched_data).dict(exclude_unset=True)
-
-        # Step 4: Update the database with the new, complete profile in the resume_collection
-        resume_collection.update_one(
-            {"_id": uploader_email, "candidates.candidate_email": candidate_email},
-            {"$set": {"candidates.$.parsed_resume_data": validated_enriched_data}}
-        )
-
-        logger.info(f"[BACKGROUND] Successfully enriched and updated profile for {candidate_email}.")
-
-    except Exception as e:
-        # Catch ALL exceptions to prevent the background task from crashing the server
-        logger.error(f"[BACKGROUND] An error occurred during the enrichment task for {candidate_email}: {e}", exc_info=True)
-        # Do not re-raise the exception, as this is a background task.
 
 class ProcessWebhookResponse(BaseModel):
     uploader_email: str
@@ -2312,172 +2281,18 @@ class ProcessWebhookResponse(BaseModel):
     stored_data_field_name: str = Field(..., description="The name of the field where data is stored in the new collection.")
     updated_information_preview: Dict[str, Any] = Field(..., description="A preview of the merged data that was stored.")
 
-# @app.post( # Or @app.post
-#     "/api/candidates/{uploader_email}/{candidate_email}/process-webhook-data", # Path unchanged as per instruction
-#     response_model=ProcessWebhookResponse,
-#     status_code=200,
-#     tags=["Candidate Data"],
-#     summary="Stores and merges custom data for a candidate.",
-#     description="Takes a custom JSON payload. This JSON object is stored in a dedicated collection "
-#                 "If data for this candidate already exists in that collection, the new payload is merged into "
-#                 "the existing data: if a key from the new data already exists, its value becomes a list "
-#                 "(or has the new value appended if already a list), accumulating all values submitted for that key. "
-#                 "This ensures a historical aggregation of all submitted data points. "
-#                 "The existence of the uploader and candidate is first validated against the main resume data.",
-#     responses={
-#         200: {"description": "Custom data stored and merged successfully."},
-#         400: {"description": "Invalid input payload."},
-#         404: {"description": "Uploader or Candidate not found in the resume database."},
-#         500: {"description": "Internal server error during processing or DB operation."},
-#         503: {"description": "Database service unavailable."}
-#     }
-# )
-# async def process_and_store_webhook_data( # Renamed from original to avoid conflict if running side-by-side
-#     uploader_email: str = Path(..., description="Email of the uploader."),
-#     candidate_email: EmailStr = Path(..., description="Email of the candidate."),
-#     # Parameter name `webhook_input_payload` kept as per original function signature
-#     webhook_input_payload: Dict[str, Any] = Body(..., example={"question_id": "Q123", "answer": "Candidate's response.", "score": 85}),
-#     current_user: Dict[str, Any] = Depends(get_current_user)
-# ):
-#     # Verify if the current user has access to this data
-#     if not verify_access(current_user, uploader_email):
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="You don't have permission to access this data"
-#         )
-#     """
-#     Stores custom data payload into a dedicated collection for the candidate,
-#     merging it with existing data using a specific aggregation logic.
-#     Validates uploader/candidate existence against the resume collection first.
-#     """
-#     interactions_collection = db['additional_info']
-#     AGGREGATED_DATA_FIELD_NAME = "additional_info"
-#     logger.info(f"Request to store and merge custom data for candidate '{candidate_email}' (uploader: '{uploader_email}').")
-
-#     if resume_collection is None or interactions_collection is None:
-#         logger.error("Database collection object(s) are None. Cannot process request.")
-#         raise HTTPException(status_code=503, detail="Database service unavailable.")
-
-#     uploader_email_lower = uploader_email.lower()
-#     candidate_email_lower = str(candidate_email).lower() # Ensure EmailStr is converted to str for DB query consistency
-    
-#     data_to_store = webhook_input_payload # This is the data previously expected from the webhook
-
-#     # 1. Validate Uploader and Candidate existence in resume_collection (as per original logic)
-#     try:
-#         uploader_doc = resume_collection.find_one(
-#             {"_id": uploader_email_lower, "candidates.candidate_email": candidate_email_lower},
-#             {"_id": 1} # We only need to check for existence, no need to pull candidate data
-#         )
-#         if not uploader_doc:
-#             logger.warning(f"Candidate '{candidate_email_lower}' not found under uploader '{uploader_email_lower}' for storing custom data.")
-#             raise HTTPException(status_code=404, detail="Uploader or Candidate not found in the resume database.")
-#     except OperationFailure as op_err:
-#         logger.error(f"MongoDB operation failed during validation for candidate '{candidate_email_lower}': {op_err.details}", exc_info=True)
-#         raise HTTPException(status_code=500, detail=f"Database validation error: {op_err.code_name}")
-#     except Exception as e:
-#         logger.exception(f"Unexpected error during uploader/candidate validation for '{candidate_email_lower}': {e}")
-#         raise HTTPException(status_code=500, detail="An internal error occurred during validation.")
-
-#     # 2. Fetch existing aggregated data from the new interactions_collection
-#     existing_aggregated_data: Dict[str, Any] = {}
-#     try:
-#         interaction_doc = interactions_collection.find_one(
-#             {"uploader_email": uploader_email_lower, "candidate_email": candidate_email_lower}
-#         )
-#         if interaction_doc and isinstance(interaction_doc.get(AGGREGATED_DATA_FIELD_NAME), dict):
-#             existing_aggregated_data = interaction_doc[AGGREGATED_DATA_FIELD_NAME]
-#             logger.info(f"Found existing interaction data for candidate '{candidate_email_lower}'.")
-#         else:
-#             logger.info(f"No existing interaction data found for candidate '{candidate_email_lower}'. A new record will be created/initialized.")
-
-#     except OperationFailure as op_err:
-#         logger.error(f"MongoDB operation failed fetching existing interaction data for '{candidate_email_lower}': {op_err.details}", exc_info=True)
-#         raise HTTPException(status_code=500, detail=f"Database error fetching interaction data: {op_err.code_name}")
-#     except Exception as e:
-#         logger.exception(f"Error fetching existing interaction data for candidate '{candidate_email_lower}': {e}")
-#         raise HTTPException(status_code=500, detail="Internal error fetching interaction data.")
-
-#     # 3. Prepare the merged object using the specified logic
-#     # Deepcopy to avoid modifying the fetched data directly if it's mutable
-#     merged_data = copy.deepcopy(existing_aggregated_data)
-
-#     for key, new_value in data_to_store.items():
-#         if key in merged_data:
-#             current_value = merged_data[key]
-#             if isinstance(current_value, list):
-#                 current_value.append(new_value)
-#             else:
-#                 merged_data[key] = [current_value, new_value]
-#         else:
-#             merged_data[key] = new_value
-    
-#     logger.info(f"Custom data prepared for storage/merging for candidate '{candidate_email_lower}'.")
-
-#     # 4. Store the merged object in MongoDB (interactions_collection) using upsert
-#     try:
-#         current_time = datetime.now(timezone.utc)
-#         update_result = interactions_collection.update_one(
-#             {"uploader_email": uploader_email_lower, "candidate_email": candidate_email_lower},
-#             {
-#                 "$set": {
-#                     AGGREGATED_DATA_FIELD_NAME: merged_data,
-#                     "uploader_email": uploader_email_lower, # Ensure these are set on update too
-#                     "candidate_email": candidate_email_lower,
-#                     "last_updated_at": current_time
-#                 },
-#                 "$setOnInsert": {
-#                     # uploader_email and candidate_email are already in $set,
-#                     # but $setOnInsert guarantees they are only set on creation if not in $set.
-#                     # However, to ensure they are always present, $set is better.
-#                     # "uploader_email": uploader_email_lower,
-#                     # "candidate_email": candidate_email_lower,
-#                     "created_at": current_time
-#                 }
-#             },
-#             upsert=True
-#         )
-        
-#         status_message = "Custom data stored and merged successfully."
-#         if update_result.upserted_id:
-#             status_message = "Custom data stored successfully (new record created)."
-#             logger.info(f"New interaction record created for candidate '{candidate_email_lower}' with ID: {update_result.upserted_id}.")
-#         elif update_result.modified_count > 0:
-#             status_message = "Custom data merged and updated successfully."
-#             logger.info(f"Interaction data updated for candidate '{candidate_email_lower}'.")
-#         elif update_result.matched_count > 0:
-#             status_message = "Submitted data was identical to existing aggregated data; no change made."
-#             logger.info(f"Submitted data for candidate '{candidate_email_lower}' resulted in no change to stored data.")
-#         else:
-#             # This case should ideally not be reached if upsert=True and no error.
-#             # If reached, it implies something unexpected.
-#             logger.error(f"Interaction data update for '{candidate_email_lower}' reported no match, no modification, and no upsert. Result: {update_result.raw_result}")
-#             status_message = "Data submission processed, but status unclear (no change, no new record)."
-
-
-#         return ProcessWebhookResponse(
-#             uploader_email=uploader_email,
-#             candidate_email=candidate_email, # Original EmailStr from input
-#             status="success",
-#             message=status_message,
-#             stored_data_field_name=AGGREGATED_DATA_FIELD_NAME,
-#             updated_information_preview=merged_data
-#         )
-
-#     except OperationFailure as op_err:
-#         logger.error(f"MongoDB operation failed storing custom data for candidate '{candidate_email_lower}': {op_err.details}", exc_info=True)
-#         raise HTTPException(status_code=500, detail=f"Database operation error: {op_err.code_name}")
-#     except Exception as e:
-#         logger.exception(f"Unexpected error storing custom data for candidate '{candidate_email_lower}': {e}")
-#         raise HTTPException(status_code=500, detail="An internal server error occurred during data storage.")
-
-@app.post(
-    "/api/candidates/{uploader_email}/{candidate_email}/process-webhook-data",
+@app.post( # Or @app.post
+    "/api/candidates/{uploader_email}/{candidate_email}/process-webhook-data", # Path unchanged as per instruction
     response_model=ProcessWebhookResponse,
     status_code=200,
     tags=["Candidate Data"],
-    summary="Stores custom data and triggers background profile enrichment.",
-    description="Takes a custom JSON payload, stores it, and triggers a background task to enrich the main candidate profile using this data. The initial response is returned immediately.",
+    summary="Stores and merges custom data for a candidate.",
+    description="Takes a custom JSON payload. This JSON object is stored in a dedicated collection "
+                "If data for this candidate already exists in that collection, the new payload is merged into "
+                "the existing data: if a key from the new data already exists, its value becomes a list "
+                "(or has the new value appended if already a list), accumulating all values submitted for that key. "
+                "This ensures a historical aggregation of all submitted data points. "
+                "The existence of the uploader and candidate is first validated against the main resume data.",
     responses={
         200: {"description": "Custom data stored and merged successfully."},
         400: {"description": "Invalid input payload."},
@@ -2486,12 +2301,12 @@ class ProcessWebhookResponse(BaseModel):
         503: {"description": "Database service unavailable."}
     }
 )
-async def process_and_store_webhook_data(
+async def process_and_store_webhook_data( # Renamed from original to avoid conflict if running side-by-side
     uploader_email: str = Path(..., description="Email of the uploader."),
     candidate_email: EmailStr = Path(..., description="Email of the candidate."),
+    # Parameter name `webhook_input_payload` kept as per original function signature
     webhook_input_payload: Dict[str, Any] = Body(..., example={"question_id": "Q123", "answer": "Candidate's response.", "score": 85}),
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    background_tasks: BackgroundTasks = BackgroundTasks()  # Assign a default value
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     # Verify if the current user has access to this data
     if not verify_access(current_user, uploader_email):
@@ -2499,23 +2314,29 @@ async def process_and_store_webhook_data(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access this data"
         )
-
+    """
+    Stores custom data payload into a dedicated collection for the candidate,
+    merging it with existing data using a specific aggregation logic.
+    Validates uploader/candidate existence against the resume collection first.
+    """
     interactions_collection = db['additional_info']
     AGGREGATED_DATA_FIELD_NAME = "additional_info"
-    logger.info(f"Request to store custom data for candidate '{candidate_email}' and trigger background enrichment.")
+    logger.info(f"Request to store and merge custom data for candidate '{candidate_email}' (uploader: '{uploader_email}').")
 
     if resume_collection is None or interactions_collection is None:
         logger.error("Database collection object(s) are None. Cannot process request.")
         raise HTTPException(status_code=503, detail="Database service unavailable.")
 
     uploader_email_lower = uploader_email.lower()
-    candidate_email_lower = str(candidate_email).lower()
+    candidate_email_lower = str(candidate_email).lower() # Ensure EmailStr is converted to str for DB query consistency
     
-    # 1. Validate Uploader and Candidate existence in the main resume_collection
+    data_to_store = webhook_input_payload # This is the data previously expected from the webhook
+
+    # 1. Validate Uploader and Candidate existence in resume_collection (as per original logic)
     try:
         uploader_doc = resume_collection.find_one(
             {"_id": uploader_email_lower, "candidates.candidate_email": candidate_email_lower},
-            {"_id": 1} # Projection to only check for existence
+            {"_id": 1} # We only need to check for existence, no need to pull candidate data
         )
         if not uploader_doc:
             logger.warning(f"Candidate '{candidate_email_lower}' not found under uploader '{uploader_email_lower}' for storing custom data.")
@@ -2527,7 +2348,7 @@ async def process_and_store_webhook_data(
         logger.exception(f"Unexpected error during uploader/candidate validation for '{candidate_email_lower}': {e}")
         raise HTTPException(status_code=500, detail="An internal error occurred during validation.")
 
-    # 2. Fetch existing aggregated data from the interactions_collection
+    # 2. Fetch existing aggregated data from the new interactions_collection
     existing_aggregated_data: Dict[str, Any] = {}
     try:
         interaction_doc = interactions_collection.find_one(
@@ -2537,14 +2358,20 @@ async def process_and_store_webhook_data(
             existing_aggregated_data = interaction_doc[AGGREGATED_DATA_FIELD_NAME]
             logger.info(f"Found existing interaction data for candidate '{candidate_email_lower}'.")
         else:
-            logger.info(f"No existing interaction data found for candidate '{candidate_email_lower}'. A new record will be created.")
+            logger.info(f"No existing interaction data found for candidate '{candidate_email_lower}'. A new record will be created/initialized.")
+
+    except OperationFailure as op_err:
+        logger.error(f"MongoDB operation failed fetching existing interaction data for '{candidate_email_lower}': {op_err.details}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Database error fetching interaction data: {op_err.code_name}")
     except Exception as e:
         logger.exception(f"Error fetching existing interaction data for candidate '{candidate_email_lower}': {e}")
         raise HTTPException(status_code=500, detail="Internal error fetching interaction data.")
 
-    # 3. Prepare the merged object for the interactions_collection
+    # 3. Prepare the merged object using the specified logic
+    # Deepcopy to avoid modifying the fetched data directly if it's mutable
     merged_data = copy.deepcopy(existing_aggregated_data)
-    for key, new_value in webhook_input_payload.items():
+
+    for key, new_value in data_to_store.items():
         if key in merged_data:
             current_value = merged_data[key]
             if isinstance(current_value, list):
@@ -2554,7 +2381,9 @@ async def process_and_store_webhook_data(
         else:
             merged_data[key] = new_value
     
-    # 4. Store the merged object in the interactions_collection
+    logger.info(f"Custom data prepared for storage/merging for candidate '{candidate_email_lower}'.")
+
+    # 4. Store the merged object in MongoDB (interactions_collection) using upsert
     try:
         current_time = datetime.now(timezone.utc)
         update_result = interactions_collection.update_one(
@@ -2562,11 +2391,18 @@ async def process_and_store_webhook_data(
             {
                 "$set": {
                     AGGREGATED_DATA_FIELD_NAME: merged_data,
-                    "uploader_email": uploader_email_lower,
+                    "uploader_email": uploader_email_lower, # Ensure these are set on update too
                     "candidate_email": candidate_email_lower,
                     "last_updated_at": current_time
                 },
-                "$setOnInsert": {"created_at": current_time}
+                "$setOnInsert": {
+                    # uploader_email and candidate_email are already in $set,
+                    # but $setOnInsert guarantees they are only set on creation if not in $set.
+                    # However, to ensure they are always present, $set is better.
+                    # "uploader_email": uploader_email_lower,
+                    # "candidate_email": candidate_email_lower,
+                    "created_at": current_time
+                }
             },
             upsert=True
         )
@@ -2574,36 +2410,35 @@ async def process_and_store_webhook_data(
         status_message = "Custom data stored and merged successfully."
         if update_result.upserted_id:
             status_message = "Custom data stored successfully (new record created)."
-            logger.info(f"New interaction record created for candidate '{candidate_email_lower}'.")
+            logger.info(f"New interaction record created for candidate '{candidate_email_lower}' with ID: {update_result.upserted_id}.")
         elif update_result.modified_count > 0:
             status_message = "Custom data merged and updated successfully."
             logger.info(f"Interaction data updated for candidate '{candidate_email_lower}'.")
+        elif update_result.matched_count > 0:
+            status_message = "Submitted data was identical to existing aggregated data; no change made."
+            logger.info(f"Submitted data for candidate '{candidate_email_lower}' resulted in no change to stored data.")
         else:
-            status_message = "Submitted data was identical to existing data; no change made."
-            logger.info(f"Submitted data for candidate '{candidate_email_lower}' resulted in no change.")
-            
-        # 5. Schedule the background enrichment task
-        logger.info(f"Scheduling background enrichment task for candidate '{candidate_email_lower}'.")
-        background_tasks.add_task(
-            enrich_profile_in_background,
-            uploader_email_lower,
-            candidate_email_lower,
-            webhook_input_payload
-        )
-        
-        # 6. Return the immediate successful response
+            # This case should ideally not be reached if upsert=True and no error.
+            # If reached, it implies something unexpected.
+            logger.error(f"Interaction data update for '{candidate_email_lower}' reported no match, no modification, and no upsert. Result: {update_result.raw_result}")
+            status_message = "Data submission processed, but status unclear (no change, no new record)."
+
+
         return ProcessWebhookResponse(
             uploader_email=uploader_email,
-            candidate_email=candidate_email,
+            candidate_email=candidate_email, # Original EmailStr from input
             status="success",
             message=status_message,
             stored_data_field_name=AGGREGATED_DATA_FIELD_NAME,
             updated_information_preview=merged_data
         )
 
+    except OperationFailure as op_err:
+        logger.error(f"MongoDB operation failed storing custom data for candidate '{candidate_email_lower}': {op_err.details}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Database operation error: {op_err.code_name}")
     except Exception as e:
         logger.exception(f"Unexpected error storing custom data for candidate '{candidate_email_lower}': {e}")
-        raise HTTPException(status_code=500, detail="An internal error occurred during data storage.")
+        raise HTTPException(status_code=500, detail="An internal server error occurred during data storage.")
 
 class DetailEvaluationItemSchema(BaseModel):
     criteria: str
