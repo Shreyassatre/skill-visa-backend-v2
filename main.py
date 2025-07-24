@@ -1724,17 +1724,20 @@ class DAMAModel(BaseModel):
 class ANZSCOFullDetailResponse(BaseModel):
     ANZSCO: str
     Occupation: str
-    Assessing_Authority: Optional[str] = None # Handles "nan" as a string, or null as None
+    Assessing_Authority: Optional[str] = None
     eligibility_lists: EligibilityListsModel
-    visaSubclasses: VisaSubclassesModel
+    
+    # CHANGE IS HERE:
+    # Use an alias to handle both "visaSubclasses" and "visa_subclasses"
+    # The field name in your model will be `visa_subclasses`
+    visa_subclasses: VisaSubclassesModel = Field(..., alias="visaSubclasses")
+
     State: StateOccupationDetailModel
     DAMA: DAMAModel
 
     class Config:
-        # For Pydantic v2: model_config = {"populate_by_name": True}
-        # For Pydantic v1: populate_by_name = True (or by_alias in .dict())
-        # This helps with field names like "190" vs "visa_190" if needed, but Field(alias=...) is more direct.
-        pass
+        # Allow the model to be populated by field name OR alias
+        populate_by_name = True
 # --- End of Pydantic Models for ANZSCO Detail Response ---
 
 full_occupation_json_list: List[Dict[str, Any]] = []
@@ -1999,9 +2002,9 @@ async def get_raw_webhook_response( # Renamed function for clarity
         )
     
     # N8N_WEBHOOK_URL = "https://mwxeosxtdobcbzsxku.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f14"
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f43"
-    N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f43"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f43"
+    N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f43"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- 1. Prepare the payload for the webhook (same logic as before) ---
@@ -2141,9 +2144,9 @@ async def get_raw_webhook_response( # Renamed function for clarity
         )
     
     # N8N_WEBHOOK_URL = "https://mwxeosxtdobcbzsxku.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f14"
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f21"
-    N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f21"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f14"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f21"
+    N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f21"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- 1. Prepare the payload for the webhook (same logic as before) ---
@@ -2646,8 +2649,8 @@ async def get_state_eligibility(
     
     # logger.info(f"Received request for /visa/analysis. Parsed calculated_points from body: {points_data_from_request_body.model_dump_json(indent=2)}")
     
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f31"
-    N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f31"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f31"
+    N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f31"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     interactions_collection = db['additional_info']
@@ -2802,8 +2805,8 @@ async def get_raw_webhook_response(
     
     # logger.info(f"Received request for /visa/analysis. Parsed calculated_points from body: {points_data_from_request_body.model_dump_json(indent=2)}")
     
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f16"
-    N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f16"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f16"
+    N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f16"
     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     interactions_collection = db['additional_info']
@@ -2955,8 +2958,8 @@ async def get_raw_webhook_response(
 #             detail="You don't have permission to access this data"
 #         )
     
-#     # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f17"
-#     N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
+#     # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f17"
+#     N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f17"
 #     logger.info(f"Request to get raw webhook response for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
 #     interactions_collection = db['additional_info']
@@ -3096,10 +3099,10 @@ async def get_raw_webhook_response_and_upsert( # Renamed for clarity
             detail="You don't have permission to access this data"
         )
 
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
-    # N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f19"
-    N8N_WEBHOOK_URL = "https://zjpxpyanroshiskdre.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f19"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f18"
+    # N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook-test/228754dd-ab65-4559-8654-34c2f6f08f19"
+    N8N_WEBHOOK_URL = "https://ajhjqhhrysfgfqaqem.app.n8n.cloud/webhook/228754dd-ab65-4559-8654-34c2f6f08f19"
     logger.info(f"Request for points calculation for candidate '{candidate_email}' (uploader: '{uploader_email}') via n8n.")
 
     # --- Get MongoDB collections ---
